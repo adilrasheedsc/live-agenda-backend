@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const TrackSchema = new mongoose.Schema(
@@ -11,6 +10,17 @@ const TrackSchema = new mongoose.Schema(
       maxlength: 100,
     },
 
+    // optional
+    trackLeaderIds: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Faculty",
+        },
+      ],
+      default: [],
+    },
+
     status: {
       type: String,
       enum: ["Active", "Inactive"],
@@ -21,11 +31,9 @@ const TrackSchema = new mongoose.Schema(
   {
     timestamps: true,
     versionKey: false,
-  }
+  },
 );
 
-const Track =
-  mongoose.models.Track ||
-  mongoose.model("Track", TrackSchema);
+const Track = mongoose.models.Track || mongoose.model("Track", TrackSchema);
 
 export default Track;

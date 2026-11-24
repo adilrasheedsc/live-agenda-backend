@@ -17,10 +17,6 @@ import sessionRoutes from "./routes/sessionRoutes.js";
 import topicRoutes from "./routes/topicRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
-<<<<<<< HEAD
-import agendaShareRoutes from "./routes/agendaShare.routes.js";
-=======
->>>>>>> 03fb75b6e84b394e819b60e34eb531efb2e85317
 import errorHandler from "./middlewares/errorHandler.js";
 
 // ==========================================
@@ -157,10 +153,6 @@ app.use("/api/sessions", sessionRoutes);
 app.use("/api/topics", topicRoutes);
 app.use("/api/public", publicRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-<<<<<<< HEAD
-app.use("/api/agenda/whatsapp", agendaShareRoutes);
-=======
->>>>>>> 03fb75b6e84b394e819b60e34eb531efb2e85317
 
 // ==========================================
 // 404 ROUTE

@@ -1,21 +1,14 @@
-
 import mongoose from "mongoose";
-
+import Faculty from "../models/Faculty.js";
 import Track from "../models/Track.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
 
-import {
-  successResponse,
-  errorResponse,
-} from "../utils/response.js";
+import { successResponse, errorResponse } from "../utils/response.js";
 
 import buildFiltersQuery from "../utils/filters.js";
 
-import {
-  getPagination,
-  buildPaginationMeta,
-} from "../utils/pagination.js";
+import { getPagination, buildPaginationMeta } from "../utils/pagination.js";
 
 import buildSearchQuery from "../utils/search.js";
 import buildSortQuery from "../utils/sort.js";
@@ -31,12 +24,28 @@ const ALLOWED_FILTER_FIELDS = ["status"];
 
 const ALLOWED_SEARCH_FIELDS = ["trackName"];
 
-const ALLOWED_SORT_FIELDS = [
-  "trackName",
-  "status",
-  "createdAt",
-  "updatedAt",
-];
+const ALLOWED_SORT_FIELDS = ["trackName", "status", "createdAt", "updatedAt"];
+
+// faculty ids
+const isValidFacultyIds = async (ids = []) => {
+  if (!Array.isArray(ids)) return false;
+
+  if (ids.length === 0) return true;
+
+  const uniqueIds = [...new Set(ids.map(String))];
+
+  const invalidIds = uniqueIds.some(
+    (id) => !mongoose.isValidObjectId(id),
+  );
+
+  if (invalidIds) return false;
+
+  const faculties = await Faculty.countDocuments({
+    _id: { $in: uniqueIds },
+  });
+
+  return faculties === uniqueIds.length;
+};
 
 // ==========================================
 // CREATE TRACK
@@ -44,23 +53,17 @@ const ALLOWED_SORT_FIELDS = [
 // ==========================================
 
 export const createTrack = asyncHandler(async (req, res) => {
-  const { trackName, status } = req.body;
+  const { trackName, trackLeaderIds, status } = req.body;
 
   // Validate Track Name
-  if (
-    typeof trackName !== "string" ||
-    !trackName.trim()
-  ) {
+  if (typeof trackName !== "string" || !trackName.trim()) {
     return errorResponse(res, {
       statusCode: 400,
       message: "Track name is required.",
     });
   }
 
-  if (
-    trackName.trim().length < 2 ||
-    trackName.trim().length > 100
-  ) {
+  if (trackName.trim().length < 2 || trackName.trim().length > 100) {
     return errorResponse(res, {
       statusCode: 400,
       message: "Track name must be between 2 and 100 characters.",
@@ -68,19 +71,30 @@ export const createTrack = asyncHandler(async (req, res) => {
   }
 
   // Validate Status
-  if (
-    status !== undefined &&
-    !["Active", "Inactive"].includes(status)
-  ) {
+  if (status !== undefined && !["Active", "Inactive"].includes(status)) {
     return errorResponse(res, {
       statusCode: 400,
       message: "Status must be either Active or Inactive.",
     });
   }
 
+  if (trackLeaderIds !== undefined) {
+    const validFaculty = await isValidFacultyIds(trackLeaderIds);
+
+    if (!validFaculty) {
+      return errorResponse(res, {
+        statusCode: 400,
+        message: "One or more track leader IDs are invalid.",
+      });
+    }
+  }
+
   // Create Track
   const track = await Track.create({
     trackName: trackName.trim(),
+    ...(trackLeaderIds !== undefined && {
+      trackLeaderIds,
+    }),
     ...(status !== undefined && { status }),
   });
 
@@ -101,23 +115,13 @@ export const getAllTracks = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPagination(req);
 
   // Filter Utility
-  const filters = buildFiltersQuery(
-    req,
-    ALLOWED_FILTER_FIELDS
-  );
+  const filters = buildFiltersQuery(req, ALLOWED_FILTER_FIELDS);
 
   // Search Utility
-  const searchQuery = buildSearchQuery(
-    req,
-    ALLOWED_SEARCH_FIELDS
-  );
+  const searchQuery = buildSearchQuery(req, ALLOWED_SEARCH_FIELDS);
 
   // Sort Utility
-  const sortQuery = buildSortQuery(
-    req,
-    ALLOWED_SORT_FIELDS,
-    "createdAt"
-  );
+  const sortQuery = buildSortQuery(req, ALLOWED_SORT_FIELDS, "createdAt");
 
   // Combine Filters and Search
   const filterQuery = {
@@ -128,6 +132,7 @@ export const getAllTracks = asyncHandler(async (req, res) => {
   // Fetch Tracks and Total Count
   const [tracks, total] = await Promise.all([
     Track.find(filterQuery)
+      .populate("trackLeaderIds", "fullName email mobile")
       .sort(sortQuery)
       .skip(skip)
       .limit(limit)
@@ -137,11 +142,7 @@ export const getAllTracks = asyncHandler(async (req, res) => {
   ]);
 
   // Pagination Metadata Utility
-  const pagination = buildPaginationMeta(
-    total,
-    page,
-    limit
-  );
+  const pagination = buildPaginationMeta(total, page, limit);
 
   const data = { tracks };
 
@@ -163,17 +164,10 @@ export const getActiveTracks = asyncHandler(async (req, res) => {
   const { page, limit, skip } = getPagination(req);
 
   // Search Utility
-  const searchQuery = buildSearchQuery(
-    req,
-    ALLOWED_SEARCH_FIELDS
-  );
+  const searchQuery = buildSearchQuery(req, ALLOWED_SEARCH_FIELDS);
 
   // Sort Utility
-  const sortQuery = buildSortQuery(
-    req,
-    ALLOWED_SORT_FIELDS,
-    "createdAt"
-  );
+  const sortQuery = buildSortQuery(req, ALLOWED_SORT_FIELDS, "createdAt");
 
   // Only Active Tracks
   const filterQuery = {
@@ -184,6 +178,7 @@ export const getActiveTracks = asyncHandler(async (req, res) => {
   // Fetch Active Tracks and Total Count
   const [tracks, total] = await Promise.all([
     Track.find(filterQuery)
+      .populate("trackLeaderIds", "fullName email mobile")
       .sort(sortQuery)
       .skip(skip)
       .limit(limit)
@@ -193,11 +188,7 @@ export const getActiveTracks = asyncHandler(async (req, res) => {
   ]);
 
   // Pagination Metadata Utility
-  const pagination = buildPaginationMeta(
-    total,
-    page,
-    limit
-  );
+  const pagination = buildPaginationMeta(total, page, limit);
 
   const data = { tracks };
 
@@ -214,20 +205,13 @@ export const getActiveTracks = asyncHandler(async (req, res) => {
 // GET /api/tracks/active/all
 // ==========================================
 
-export const getAllActiveTracksWithoutPagination =
-  asyncHandler(async (req, res) => {
+export const getAllActiveTracksWithoutPagination = asyncHandler(
+  async (req, res) => {
     // Search Utility
-    const searchQuery = buildSearchQuery(
-      req,
-      ALLOWED_SEARCH_FIELDS
-    );
+    const searchQuery = buildSearchQuery(req, ALLOWED_SEARCH_FIELDS);
 
     // Sort Utility
-    const sortQuery = buildSortQuery(
-      req,
-      ALLOWED_SORT_FIELDS,
-      "trackName"
-    );
+    const sortQuery = buildSortQuery(req, ALLOWED_SORT_FIELDS, "trackName");
 
     // Only Active Tracks
     const filterQuery = {
@@ -237,6 +221,7 @@ export const getAllActiveTracksWithoutPagination =
 
     // Fetch All Active Tracks
     const tracks = await Track.find(filterQuery)
+      .populate("trackLeaderIds", "fullName email mobile")
       .sort(sortQuery)
       .lean();
 
@@ -247,7 +232,8 @@ export const getAllActiveTracksWithoutPagination =
       message: "Active tracks fetched successfully.",
       data,
     });
-  });
+  },
+);
 
 // ==========================================
 // GET TRACK BY ID
@@ -266,7 +252,9 @@ export const getTrackById = asyncHandler(async (req, res) => {
   }
 
   // Find Track
-  const track = await Track.findById(id).lean();
+  const track = await Track.findById(id)
+    .populate("trackLeaderIds", "fullName email mobile")
+    .lean();
 
   if (!track) {
     return errorResponse(res, {
@@ -291,7 +279,7 @@ export const getTrackById = asyncHandler(async (req, res) => {
 
 export const updateTrack = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { trackName, status } = req.body;
+  const { trackName, trackLeaderIds, status } = req.body;
 
   // Validate ID
   if (!isValidId(id)) {
@@ -318,6 +306,19 @@ export const updateTrack = asyncHandler(async (req, res) => {
     }
 
     updateData.trackName = trackName.trim();
+  }
+
+  if (trackLeaderIds !== undefined) {
+    const validFaculty = await isValidFacultyIds(trackLeaderIds);
+
+    if (!validFaculty) {
+      return errorResponse(res, {
+        statusCode: 400,
+        message: "One or more track leader IDs are invalid.",
+      });
+    }
+
+    updateData.trackLeaderIds = trackLeaderIds;
   }
 
   // Validate Status
@@ -347,8 +348,8 @@ export const updateTrack = asyncHandler(async (req, res) => {
     {
       new: true,
       runValidators: true,
-    }
-  );
+    },
+  ).populate("trackLeaderIds", "fullName email mobile");
 
   if (!track) {
     return errorResponse(res, {

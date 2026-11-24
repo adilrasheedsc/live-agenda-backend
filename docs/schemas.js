@@ -73,6 +73,13 @@ export const schemas = {
         type: "string",
         example: "General Medicine",
       },
+      trackLeaderIds: {
+        type: "array",
+        items: {
+          type: "string",
+        },
+        example: ["672b12345678901234567890", "672b12345678901234567891"],
+      },
 
       status: {
         type: "string",

@@ -1,4 +1,3 @@
-
 const trackPaths = {
   // ==========================================
   // CREATE TRACK
@@ -21,6 +20,10 @@ const trackPaths = {
             },
             example: {
               trackName: "General Medicine",
+              trackLeaderIds: [
+                "672b12345678901234567890",
+                "672b12345678901234567891",
+              ],
               status: "Active",
             },
           },
@@ -107,12 +110,7 @@ const trackPaths = {
           in: "query",
           schema: {
             type: "string",
-            enum: [
-              "trackName",
-              "status",
-              "createdAt",
-              "updatedAt",
-            ],
+            enum: ["trackName", "status", "createdAt", "updatedAt"],
             default: "createdAt",
           },
           description: "Field used to sort tracks.",
@@ -200,12 +198,7 @@ const trackPaths = {
           in: "query",
           schema: {
             type: "string",
-            enum: [
-              "trackName",
-              "status",
-              "createdAt",
-              "updatedAt",
-            ],
+            enum: ["trackName", "status", "createdAt", "updatedAt"],
             default: "createdAt",
           },
           description: "Field used to sort tracks.",
@@ -272,12 +265,7 @@ const trackPaths = {
           in: "query",
           schema: {
             type: "string",
-            enum: [
-              "trackName",
-              "status",
-              "createdAt",
-              "updatedAt",
-            ],
+            enum: ["trackName", "status", "createdAt", "updatedAt"],
             default: "trackName",
           },
           description: "Field used to sort tracks.",
@@ -460,8 +448,7 @@ const trackPaths = {
     delete: {
       tags: ["Admin - Tracks"],
       summary: "Delete track",
-      description:
-        "Permanently deletes a track using its MongoDB ID.",
+      description: "Permanently deletes a track using its MongoDB ID.",
 
       security: [{ bearerAuth: [] }],
 
