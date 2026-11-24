@@ -52,11 +52,27 @@ const publicTopicPopulation = [
   {
     path: "sessionId",
     populate: [
-      { path: "hallId", select: "hallName" },
-      { path: "trackId", select: "trackName" },
-      { path: "chairperson", select: "fullName" },
+      {
+        path: "hallId",
+        select: "hallName",
+      },
+
+      {
+        path: "trackId",
+        select: "trackName trackLeaderIds status",
+        populate: {
+          path: "trackLeaderIds",
+          select: "fullName",
+        },
+      },
+
+      {
+        path: "chairperson",
+        select: "fullName",
+      },
     ],
   },
+
   ...publicFacultyPopulation.filter(
     (item) => item.path !== "chairperson"
   ),
